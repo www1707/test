@@ -131,29 +131,29 @@ WARN_NUM=4
 
 /usr/sbin/tcpdump \                               # tcpdump命令的绝对位置，使用相对路径计划任务会找不到该命令
     -r /tmp/tcpdump/$(date -d '2 mins ago' "+%Y_%m%d_%H%M").cap \ # 分析两分钟前的那个抓包文件，上一分钟的不行，原因留个悬念
-    -nn \                                               # 直接显示IP和端口号
-    2>/dev/null \                                    # 不打印错误信息
-        | grep -Ev "$WHITE_LIST" \               # 过滤白名单中的IP
-        | awk '{print $3}' \                          # 取源IP
+    -nn \                                         # 直接显示IP和端口号
+    2>/dev/null \                                 # 不打印错误信息
+        | grep -Ev "$WHITE_LIST" \                # 过滤白名单中的IP
+        | awk '{print $3}' \                      # 取源IP
         | awk -F \. '{print $1"."$2"."$3"."$4}' \ # 去掉源端口，方便后面去重统计次数
-        | sort -n | uniq -c | sort -nr \            # IP去重后，按出现次数降序排列，第一列是出现次数，第二列是IP地址
-        | while read COUNT IP                    # while循环读取每个IP及出现次数
+        | sort -n | uniq -c | sort -nr \          # IP去重后，按出现次数降序排列，第一列是出现次数，第二列是IP地址
+        | while read COUNT IP                     # while循环读取每个IP及出现次数
           do
-            if [ $COUNT -ge $WARN_NUM ]   # 如果IP出现次数大于等于报警阈值，进行邮件报警
+            if [ $COUNT -ge $WARN_NUM ]           # 如果IP出现次数大于等于报警阈值，进行邮件报警
             then        
                 /usr/sbin/tcpdump \               # 重新分析两分钟前的那个抓包文件
                     -r /tmp/tcpdump/$(date -d '2 mins ago' "+%Y_%m%d_%H%M").cap \
                     -nn \               
                     2>/dev/null \       
-                        | grep $IP \                                                                                      # 只看该异常IP的信息
-                        | head -10 \                                                                                     # 节选前10行证据，放到邮件正文
-                        | mail -r net-monitor@mail.com \                                                         # 设置邮件的发件人
-                               -s "异常IP: $IP 一分钟内扫描监控服务器 $COUNT 次" \                          # 设置邮件主题
+                        | grep $IP \                                                          # 只看该异常IP的信息
+                        | head -10 \                                                          # 节选前10行证据，放到邮件正文
+                        | mail -r net-monitor@mail.com \                                      # 设置邮件的发件人
+                               -s "异常IP: $IP 一分钟内扫描监控服务器 $COUNT 次" \                # 设置邮件主题
                                -a /tmp/tcpdump/$(date -d '2 mins ago' "+%Y_%m%d_%H%M").cap \  # 将本次分析的抓包文件，作为完成的证据添加到邮件的附件中
-                               -c CC@mail.com \                                                                     # 设置抄送邮箱
-                               network-manager@mail.com                                                       # 设置主送邮箱
+                               -c CC@mail.com \                                               # 设置抄送邮箱
+                               network-manager@mail.com                                       # 设置主送邮箱
             else        
-                exit                                     # 如果IP出现的次数小于报警阈值，直接退出脚本，不在对后面出现次数更少的IP进行处理
+                exit                              # 如果IP出现的次数小于报警阈值，直接退出脚本，不在对后面出现次数更少的IP进行处理
             fi          
           done 
 ```
@@ -163,8 +163,7 @@ WARN_NUM=4
 * * * * * sh /opt/shells/net-monitor.sh
 ```
 ##### 8、完成后的效果，如图
-![568e23104a58dae171e2907f8bc0c968.png](en-resource://database/8344:1)
-
+![](https://img2020.cnblogs.com/blog/944907/202102/944907-20210201234305580-1301662212.png)
 ##### 9、附1：实时抓包命令
 ```bash
 [root@net-monitor ~]# tcpdump -i any \(tcp[tcpflags] = tcp-syn\) and dst host \(10.12.28.99 or 10.12.29.99 or 10.12.30.99 or 10.12.31.99\) -nn
@@ -187,4 +186,3 @@ listening on any, link-type LINUX_SLL (Linux cooked), capture size 262144 bytes
 ------ /tmp/tcpdump/2021_0201_2329.cap -----
       1 10.12.28.8
 ```
-##### 11、附3：[tcpdump官方手册](http://www.tcpdump.org/manpages/tcpdump.1.html)
